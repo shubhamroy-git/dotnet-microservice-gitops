@@ -9,7 +9,7 @@ public class ProductsController : ControllerBase
     [HttpGet]
     public IActionResult GetAllProducts()
     {
-        var items = new[] { "Cloud Storage Engine", "Automated Test Runner", "GitOps Synchronizer" };
+        var items = new[] { "It's me this time around", "Cloud Storage Engine", "Automated Test Runner", "GitOps Synchronizer" };
         return Ok(items);
     }
 }
