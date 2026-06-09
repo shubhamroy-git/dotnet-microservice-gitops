@@ -16,23 +16,27 @@ pipeline {
     stages {
 
         stage('1. Compile, Test & Analyze') {
+            agent {
+                docker {
+                    image 'mcr.microsoft.com/dotnet/sdk:10.0'
+                    // We reuse the host's network so the container can talk directly to http://localhost:9000
+                    args '-u root --network host' 
+                }
+            }
             steps {
-                // We use the encrypted secret token we saved inside Jenkins' vault
                 withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
-                    
-                    // Explicitly run everything inside our .NET 10 SDK environment
                     sh '''
                         echo "=== Installing Sonar Scanner Tool ==="
-                        dotnet tool install --global dotnet-sonarscanner --version 9.x || true
+                        dotnet tool install --global dotnet-sonarscanner
                         export PATH="$PATH:$HOME/.dotnet/tools"
 
-                        echo "=== Beginning Sonar Qube Analysis Block ==="
+                        echo "=== Beginning SonarQube Analysis ==="
                         dotnet sonarscanner begin \
                         /k:"product-catalog-api" \
                         /d:sonar.token="$SONAR_TOKEN" \
-                        /d:sonar.host.url="http://localhost:9000" \
+                        /d:sonar.host.url="http://localhost:9000"
 
-                        echo "=== Compiling Application Binaries ==="
+                        echo "=== Compiling Application ==="
                         dotnet build --configuration Release
 
                         echo "=== Finalizing Analysis & Shipping Metrics ==="
