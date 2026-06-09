@@ -36,8 +36,9 @@ pipeline {
                         /d:sonar.token="$SONAR_TOKEN" \
                         /d:sonar.host.url="http://localhost:9000"
 
-                        echo "=== Compiling Application ==="
-                        dotnet build --configuration Release
+                        echo "=== Compiling Application Binaries ==="
+                        # Step into the C# source directory before building
+                        cd src/ProductCatalogApi && dotnet build --configuration Release
 
                         echo "=== Finalizing Analysis & Shipping Metrics ==="
                         dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
