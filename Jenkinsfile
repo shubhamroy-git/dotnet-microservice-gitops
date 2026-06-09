@@ -14,19 +14,34 @@ pipeline {
     }
 
     stages {
-        stage('1. Compile & Test') {
-            agent {
-                // Dynamically boots a clean Microsoft SDK container to compile the binaries
-                docker { 
-                    image 'mcr.microsoft.com/dotnet/sdk:10.0'
-                    reuseNode true
+
+        stage('1. Compile, Test & Analyze') {
+            steps {
+                // We use the encrypted secret token we saved inside Jenkins' vault
+                withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+                    
+                    // Explicitly run everything inside our .NET 10 SDK environment
+                    sh '''
+                        echo "=== Installing Sonar Scanner Tool ==="
+                        dotnet tool install --global dotnet-sonarscanner --version 9.x || true
+                        export PATH="$PATH:$HOME/.dotnet/tools"
+
+                        echo "=== Beginning Sonar Qube Analysis Block ==="
+                        dotnet sonarscanner begin \
+                        /k:"product-catalog-api" \
+                        /d:sonar.token="$SONAR_TOKEN" \
+                        /d:sonar.host.url="http://localhost:9000" \
+
+                        echo "=== Compiling Application Binaries ==="
+                        dotnet build --configuration Release
+
+                        echo "=== Finalizing Analysis & Shipping Metrics ==="
+                        dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
+                    '''
                 }
             }
-            steps {
-                sh 'dotnet restore src/ProductCatalogApi/ProductCatalogApi.csproj'
-                sh 'dotnet build src/ProductCatalogApi/ProductCatalogApi.csproj --configuration Release'
-            }
         }
+        
 
         stage('2. Build Container Image') {
             steps {
